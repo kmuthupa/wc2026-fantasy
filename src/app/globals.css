@@ -1,26 +1,57 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* World Cup 2026 Pitch Theme */
+  --pitch-green-dark: #1a472a;
+  --pitch-green: #2d5a27;
+  --pitch-green-light: #4e9a44;
+  --goal-white: #ffffff;
+  --gold-cup: #ffd700;
+  --stadium-gray: #f3f4f6;
+  --text-main: #111827;
+  --text-muted: #4b5563;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--text-main);
+  background-color: var(--stadium-gray);
+  background-image: 
+    linear-gradient(rgba(26, 71, 42, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26, 71, 42, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .glass-card {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* Focused Animations */
+@keyframes pitch-entrance {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.animate-pitch {
+  animation: pitch-entrance 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Accessibility Focus States */
+button:focus-visible {
+  outline: 2px solid var(--pitch-green);
+  outline-offset: 2px;
 }
