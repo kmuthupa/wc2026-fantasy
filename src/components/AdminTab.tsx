@@ -1,19 +1,55 @@
-import React, { useState } from 'react';
-import { Results, ALL_TEAMS } from '@/lib/data';
+import React, { useState, useRef } from 'react';
+import { Results, ALL_TEAMS, KnockoutRound } from '@/lib/data';
+import { Card, CardHeader } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 
 interface AdminTabProps {
   results: Results;
   setResults: (results: Results) => void;
   clearAllData: () => void;
-  state: any;
+  importData: (json: string) => void;
+  state: { players: unknown[]; results: Results; activeTab: string };
 }
 
-export const AdminTab: React.FC<AdminTabProps> = ({ results, setResults, clearAllData, state }) => {
-  const [currentRound, setCurrentRound] = useState<'r32' | 'r16' | 'qf' | 'sf' | 'final'>('r32');
+const ROUNDS: { id: KnockoutRound; label: string; limit: number }[] = [
+  { id: 'r32', label: 'Round of 32', limit: 16 },
+  { id: 'r16', label: 'Round of 16', limit: 8 },
+  { id: 'qf', label: 'Quarter-finals', limit: 4 },
+  { id: 'sf', label: 'Semi-finals', limit: 2 },
+  { id: 'final', label: 'Final', limit: 1 },
+];
+
+function getEligibleTeams(round: KnockoutRound, results: Results) {
+  if (round === 'r32') return ALL_TEAMS;
+  if (round === 'r16') return ALL_TEAMS.filter((t) => results.r32.includes(t.id));
+  if (round === 'qf') return ALL_TEAMS.filter((t) => results.r16.includes(t.id));
+  if (round === 'sf') return ALL_TEAMS.filter((t) => results.qf.includes(t.id));
+  if (round === 'final') return ALL_TEAMS.filter((t) => results.sf.includes(t.id));
+  return [];
+}
+
+export const AdminTab: React.FC<AdminTabProps> = ({
+  results,
+  setResults,
+  clearAllData,
+  importData,
+  state,
+}) => {
+  const [currentRound, setCurrentRound] = useState<KnockoutRound>('r32');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const roundMeta = ROUNDS.find((r) => r.id === currentRound)!;
+  const eligibleTeams = getEligibleTeams(currentRound, results);
+
+  const selectedCount =
+    currentRound === 'final'
+      ? results.final ? 1 : 0
+      : results[currentRound].length;
 
   const handleToggleResult = (teamId: string) => {
     const newResults = { ...results };
-    
+
     if (currentRound === 'final') {
       newResults.final = newResults.final === teamId ? '' : teamId;
     } else {
@@ -21,15 +57,12 @@ export const AdminTab: React.FC<AdminTabProps> = ({ results, setResults, clearAl
       const idx = roundResults.indexOf(teamId);
       if (idx > -1) {
         roundResults.splice(idx, 1);
-      } else {
-        const limits = { r32: 16, r16: 8, qf: 4, sf: 2 };
-        if (roundResults.length < (limits[currentRound] || 0)) {
-          roundResults.push(teamId);
-        }
+      } else if (roundResults.length < roundMeta.limit) {
+        roundResults.push(teamId);
       }
       newResults[currentRound] = roundResults;
     }
-    
+
     setResults(newResults);
   };
 
@@ -38,91 +71,128 @@ export const AdminTab: React.FC<AdminTabProps> = ({ results, setResults, clearAl
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `wc2026-pitch-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `wc2026-fantasy-backup-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
+    URL.revokeObjectURL(url);
   };
 
-  return (
-    <div className="space-y-8 animate-pitch">
-      <div className="glass-card p-8 rounded-[2rem] shadow-xl border border-white/50 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-red-600/5 rounded-full -mr-16 -mt-16"></div>
-        <h2 className="text-3xl font-black mb-6 flex items-center gap-3 text-red-700 uppercase tracking-tighter">
-          <span className="bg-red-700 text-white p-2 rounded-xl text-xl">🛡️</span> Pitch Control
-        </h2>
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#4b5563] mb-8 opacity-60">
-          Official Referee Panel • Enter actual tournament outcomes
-        </p>
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result;
+      if (typeof text === 'string') {
+        if (confirm('Import will replace all current league data. Continue?')) {
+          importData(text);
+        }
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
-        <div className="flex bg-gray-100 rounded-2xl p-1.5 gap-1.5 mb-8 border border-gray-200">
-          {(['r32', 'r16', 'qf', 'sf', 'final'] as const).map((round) => (
+  const isWinner = (teamId: string) =>
+    currentRound === 'final'
+      ? results.final === teamId
+      : results[currentRound].includes(teamId);
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader
+          title="Match results"
+          description="Enter actual knockout winners. Standings update instantly."
+        />
+
+        <div className="flex gap-1 overflow-x-auto no-scrollbar p-1 mb-6 bg-[var(--surface-muted)] rounded-[var(--radius-lg)]">
+          {ROUNDS.map((round) => (
             <button
-              key={round}
-              onClick={() => setCurrentRound(round)}
-              className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${
-                currentRound === round
-                  ? 'bg-red-700 text-white shadow-lg'
-                  : 'text-gray-500 hover:bg-gray-200'
+              key={round.id}
+              type="button"
+              onClick={() => setCurrentRound(round.id)}
+              className={`flex-shrink-0 px-3 py-2 rounded-[var(--radius-md)] text-sm font-medium transition-colors ${
+                currentRound === round.id
+                  ? 'bg-white text-[var(--text-primary)] shadow-[var(--shadow-sm)]'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
-              {round === 'final' ? 'Champ' : round.toUpperCase()}
+              {round.label}
             </button>
           ))}
         </div>
 
-        <div className="mb-10">
-          <h3 className="text-xl font-black text-[#1a472a] mb-6 text-center uppercase tracking-widest italic">
-             Set {currentRound.toUpperCase()} Winners
-          </h3>
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-2">
-            {ALL_TEAMS.map((team) => {
-              const isWinner = currentRound === 'final' 
-                ? results.final === team.id 
-                : results[currentRound].includes(team.id);
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm text-[var(--text-secondary)]">
+            Select {roundMeta.limit} winner{roundMeta.limit !== 1 ? 's' : ''}
+          </p>
+          <Badge variant={selectedCount === roundMeta.limit ? 'success' : 'warning'}>
+            {selectedCount} / {roundMeta.limit}
+          </Badge>
+        </div>
 
+        {eligibleTeams.length === 0 ? (
+          <p className="text-sm text-[var(--text-secondary)] py-8 text-center">
+            Enter results for the previous round first.
+          </p>
+        ) : (
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+            {eligibleTeams.map((team) => {
+              const winner = isWinner(team.id);
               return (
                 <button
                   key={team.id}
+                  type="button"
                   onClick={() => handleToggleResult(team.id)}
-                  className={`p-2 rounded-xl border-2 flex flex-col items-center gap-1 transition-all ${
-                    isWinner
-                      ? 'bg-red-50 border-red-700 scale-105 shadow-md ring-4 ring-red-700/5'
-                      : 'bg-white border-transparent opacity-30 hover:opacity-100'
+                  className={`p-3 rounded-[var(--radius-md)] border transition-all flex flex-col items-center gap-1.5 ${
+                    winner
+                      ? 'border-[var(--accent)] bg-[var(--accent-subtle)] shadow-[var(--shadow-sm)]'
+                      : 'border-[var(--border)] bg-white hover:border-[var(--text-tertiary)]'
                   }`}
                 >
-                  <span className="text-2xl drop-shadow-sm">{team.flag}</span>
-                  <span className="text-[8px] font-black text-gray-700 text-center uppercase truncate w-full tracking-tighter">
+                  <span className="text-2xl">{team.flag}</span>
+                  <span className="text-[10px] font-medium text-[var(--text-secondary)] text-center leading-tight">
                     {team.name}
                   </span>
                 </button>
               );
             })}
           </div>
-        </div>
+        )}
+      </Card>
 
-        <div className="flex flex-col sm:flex-row gap-4 pt-8 border-t border-gray-100">
-          <button
-            onClick={handleExport}
-            className="flex-1 bg-green-700 text-white font-black uppercase tracking-widest py-4 rounded-2xl hover:bg-green-800 transition-all flex items-center justify-center gap-3 shadow-lg shadow-green-900/20 active:scale-95"
+      <Card>
+        <CardHeader title="Backup & restore" description="Export or import league data as JSON." />
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button variant="secondary" className="flex-1" onClick={handleExport}>
+            Export backup
+          </Button>
+          <Button
+            variant="secondary"
+            className="flex-1"
+            onClick={() => fileInputRef.current?.click()}
           >
-            <span>📥</span> Export Backup
-          </button>
-          <button
-            onClick={clearAllData}
-            className="flex-1 bg-gray-200 text-[#4b5563] font-black uppercase tracking-widest py-4 rounded-2xl hover:bg-gray-300 transition-all flex items-center justify-center gap-3 active:scale-95"
-          >
-            <span>🗑️</span> Reset Season
-          </button>
+            Import backup
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={handleImport}
+          />
         </div>
-      </div>
-      
-      <div className="bg-red-50 p-8 rounded-[2rem] border border-red-100 text-red-900">
-        <h4 className="font-black mb-2 flex items-center gap-3 uppercase tracking-[0.2em] text-sm">
-          <span className="bg-red-700 text-white p-1.5 rounded-lg text-xs">⚠️</span> Danger Zone
-        </h4>
-        <p className="text-xs font-bold leading-relaxed opacity-80">
-          Modifying results will instantly recalculate every neighbor's score across the entire league. Ensure the VAR check is complete before confirming winners.
+      </Card>
+
+      <Card className="border-red-100">
+        <h3 className="text-base font-semibold text-red-700 mb-1">Reset league</h3>
+        <p className="text-sm text-[var(--text-secondary)] mb-4">
+          Permanently delete all players, picks, and results.
         </p>
-      </div>
+        <Button variant="danger" onClick={clearAllData}>
+          Clear all data
+        </Button>
+      </Card>
     </div>
   );
 };

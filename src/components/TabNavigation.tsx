@@ -1,36 +1,83 @@
 import React from 'react';
 
+export type TabId = 'leaderboard' | 'players' | 'picks' | 'rules' | 'admin';
+
 interface TabNavigationProps {
   activeTab: string;
-  setActiveTab: (tab: string) => void;
+  setActiveTab: (tab: TabId) => void;
 }
 
-const tabs = [
-  { id: 'leaderboard', name: 'Standings', icon: '🏆' },
-  { id: 'players', name: 'Neighbors', icon: '👥' },
-  { id: 'groups', name: 'Groups', icon: '⚽' },
-  { id: 'picks', name: 'Picks', icon: '✍️' },
-  { id: 'rules', name: 'Rules', icon: '📜' },
-  { id: 'admin', name: 'Pitch Side', icon: '⚙️' },
+const tabs: { id: TabId; name: string; shortName: string }[] = [
+  { id: 'leaderboard', name: 'Standings', shortName: 'Standings' },
+  { id: 'players', name: 'Players', shortName: 'Players' },
+  { id: 'picks', name: 'Picks', shortName: 'Picks' },
+  { id: 'rules', name: 'Rules', shortName: 'Rules' },
+  { id: 'admin', name: 'Admin', shortName: 'Admin' },
 ];
+
+function NavButton({
+  tab,
+  activeTab,
+  setActiveTab,
+  compact,
+}: {
+  tab: (typeof tabs)[number];
+  activeTab: string;
+  setActiveTab: (tab: TabId) => void;
+  compact?: boolean;
+}) {
+  const isActive = activeTab === tab.id;
+  return (
+    <button
+      onClick={() => setActiveTab(tab.id)}
+      className={`font-medium transition-colors duration-150 ${
+        compact
+          ? `flex-1 py-2.5 text-[11px] sm:text-xs border-t-2 ${
+              isActive
+                ? 'text-[var(--text-primary)] border-[var(--accent)]'
+                : 'text-[var(--text-tertiary)] border-transparent'
+            }`
+          : `px-4 py-2 text-sm rounded-[var(--radius-md)] ${
+              isActive
+                ? 'bg-[var(--accent)] text-white'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-muted)]'
+            }`
+      }`}
+    >
+      {compact ? tab.shortName : tab.name}
+    </button>
+  );
+}
 
 export const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, setActiveTab }) => {
   return (
-    <nav className="flex flex-wrap justify-center gap-1 sm:gap-2 mb-8 bg-white/50 backdrop-blur-md p-1.5 rounded-2xl shadow-inner border border-white/50">
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          onClick={() => setActiveTab(tab.id)}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all duration-200 transform ${
-            activeTab === tab.id
-              ? 'bg-[#2d5a27] text-white shadow-lg scale-105'
-              : 'text-[#1a472a] hover:bg-white/60 active:scale-95'
-          }`}
-        >
-          <span className="text-lg">{tab.icon}</span>
-          <span className="hidden sm:inline">{tab.name}</span>
-        </button>
-      ))}
-    </nav>
+    <>
+      {/* Desktop / tablet top nav */}
+      <nav className="hidden sm:flex items-center gap-1 p-1 bg-[var(--surface-muted)] rounded-[var(--radius-lg)] border border-[var(--border-subtle)]">
+        {tabs.map((tab) => (
+          <NavButton
+            key={tab.id}
+            tab={tab}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+          />
+        ))}
+      </nav>
+
+      {/* Mobile bottom nav */}
+      <nav className="sm:hidden fixed bottom-0 inset-x-0 z-50 bg-white/95 backdrop-blur-md border-t border-[var(--border)] pb-[env(safe-area-inset-bottom)]">
+        <div className="flex max-w-lg mx-auto">
+          {tabs.map((tab) => (
+            <NavButton
+              key={tab.id}
+              tab={tab}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              compact
+            />
+          ))}
+        </div>
+      </nav>
+    </>
   );
 };

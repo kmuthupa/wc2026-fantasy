@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Player, Results, INITIAL_RESULTS } from './data';
+import { resolveTeamId } from './teams';
 
 interface AppState {
   players: Player[];
@@ -10,6 +11,16 @@ interface AppState {
 }
 
 const STORAGE_KEY = 'wc2026-fantasy-v1';
+
+function migrateState(state: AppState): AppState {
+  return {
+    ...state,
+    players: state.players.map((p) => ({
+      ...p,
+      championPick: resolveTeamId(p.championPick),
+    })),
+  };
+}
 
 export function useFantasyStore() {
   const [state, setState] = useState<AppState>({
@@ -20,12 +31,11 @@ export function useFantasyStore() {
 
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load from localStorage
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
-        setState(JSON.parse(saved));
+        setState(migrateState(JSON.parse(saved)));
       } catch (e) {
         console.error('Failed to load state', e);
       }
@@ -33,7 +43,6 @@ export function useFantasyStore() {
     setIsLoaded(true);
   }, []);
 
-  // Save to localStorage
   useEffect(() => {
     if (isLoaded) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -49,7 +58,7 @@ export function useFantasyStore() {
     const newPlayer: Player = {
       id: Math.random().toString(36).substr(2, 9),
       name,
-      championPick,
+      championPick: resolveTeamId(championPick),
       picks: {
         r32: [],
         r16: [],
@@ -72,7 +81,7 @@ export function useFantasyStore() {
   };
 
   const clearAllData = () => {
-    if (confirm('Are you sure you want to clear ALL data? This cannot be undone.')) {
+    if (confirm('Clear all league data? This cannot be undone.')) {
       setState({
         players: [],
         results: INITIAL_RESULTS,
@@ -83,10 +92,10 @@ export function useFantasyStore() {
 
   const importData = (jsonData: string) => {
     try {
-      const data = JSON.parse(jsonData);
+      const data = migrateState(JSON.parse(jsonData));
       setState(data);
-    } catch (e) {
-      alert('Invalid JSON data');
+    } catch {
+      alert('Invalid backup file.');
     }
   };
 

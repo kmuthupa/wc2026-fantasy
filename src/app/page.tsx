@@ -2,10 +2,9 @@
 
 import React from 'react';
 import { useFantasyStore } from '@/lib/store';
-import { TabNavigation } from '@/components/TabNavigation';
+import { TabNavigation, TabId } from '@/components/TabNavigation';
 import { Leaderboard } from '@/components/Leaderboard';
 import { PlayersTab } from '@/components/PlayersTab';
-import { GroupsTab } from '@/components/GroupsTab';
 import { PicksTab } from '@/components/PicksTab';
 import { RulesTab } from '@/components/RulesTab';
 import { AdminTab } from '@/components/AdminTab';
@@ -15,10 +14,10 @@ export default function Home() {
 
   if (!store.isLoaded) {
     return (
-      <div className="min-h-screen bg-[#1a472a] flex items-center justify-center">
-        <div className="animate-pulse flex flex-col items-center gap-6">
-          <div className="w-20 h-20 border-8 border-white border-t-[#ffd700] rounded-full animate-spin"></div>
-          <p className="text-white font-black uppercase tracking-[0.2em] animate-bounce">Mowing the pitch...</p>
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-[var(--border)] border-t-[var(--text-primary)] rounded-full animate-spin" />
+          <p className="text-sm text-[var(--text-secondary)]">Loading league…</p>
         </div>
       </div>
     );
@@ -34,15 +33,15 @@ export default function Home() {
             players={store.players}
             addPlayer={store.addPlayer}
             deletePlayer={store.deletePlayer}
+            onGoToPicks={() => store.setActiveTab('picks')}
           />
         );
-      case 'groups':
-        return <GroupsTab />;
       case 'picks':
         return (
           <PicksTab
             players={store.players}
             updatePlayerPicks={store.updatePlayerPicks}
+            onAddPlayers={() => store.setActiveTab('players')}
           />
         );
       case 'rules':
@@ -53,7 +52,8 @@ export default function Home() {
             results={store.results}
             setResults={store.setResults}
             clearAllData={store.clearAllData}
-            state={{ players: store.players, results: store.results }}
+            importData={store.importData}
+            state={{ players: store.players, results: store.results, activeTab: store.activeTab }}
           />
         );
       default:
@@ -62,43 +62,30 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen pb-20 selection:bg-[#ffd700] selection:text-[#1a472a]">
-      <div className="max-w-6xl mx-auto px-4 pt-12">
-        <header className="text-center mb-12 relative">
-          <div className="absolute top-1/2 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#2d5a27]/30 to-transparent -z-10"></div>
-          <h1 className="text-6xl sm:text-7xl font-[900] text-[#1a472a] tracking-tighter mb-1 uppercase drop-shadow-sm inline-block bg-transparent px-8">
-            WC2026
+    <main className="min-h-screen pb-24 sm:pb-12">
+      <div className="max-w-3xl mx-auto px-4 pt-8 sm:pt-12">
+        <header className="mb-8 sm:mb-10">
+          <p className="text-sm font-medium text-[var(--text-secondary)]">Sawgrass League</p>
+          <h1 className="mt-1 text-3xl sm:text-4xl font-semibold tracking-tight text-[var(--text-primary)] text-balance">
+            WC2026 Fantasy
           </h1>
-          <div className="flex flex-col items-center">
-             <span className="bg-[#1a472a] text-[#ffd700] px-4 py-1 rounded-full text-xs font-black uppercase tracking-[0.3em] mb-3 shadow-lg">
-               Fantasy League
-             </span>
-             <p className="text-sm font-bold text-[#4b5563] uppercase tracking-widest opacity-80">
-               Neighborhood Championship Edition
-             </p>
-          </div>
+          <p className="mt-2 text-sm text-[var(--text-tertiary)]">
+            Local data only · no tracking
+          </p>
         </header>
 
-        <TabNavigation
-          activeTab={store.activeTab}
-          setActiveTab={store.setActiveTab}
-        />
-
-        <div className="mt-12 relative">
-          {renderActiveTab()}
+        <div className="mb-8">
+          <TabNavigation
+            activeTab={store.activeTab}
+            setActiveTab={store.setActiveTab as (tab: TabId) => void}
+          />
         </div>
 
-        <footer className="mt-24 pt-12 border-t border-gray-200 text-center">
-          <div className="flex justify-center gap-4 mb-4 grayscale opacity-40">
-            <span className="text-2xl">🇺🇸</span>
-            <span className="text-2xl">🇲🇽</span>
-            <span className="text-2xl">🇨🇦</span>
-          </div>
-          <p className="font-black text-[#1a472a] uppercase tracking-tighter text-sm">
-            © 2026 Neighbor League Pitch Side
-          </p>
-          <p className="mt-1 text-[#4b5563] font-medium text-xs opacity-60">
-            Local Data Only • Privacy First • No Tracking
+        <div className="animate-fade-up">{renderActiveTab()}</div>
+
+        <footer className="mt-16 pt-8 border-t border-[var(--border-subtle)] text-center hidden sm:block">
+          <p className="text-xs text-[var(--text-tertiary)]">
+            USA · Mexico · Canada 2026
           </p>
         </footer>
       </div>
