@@ -31,8 +31,6 @@ export default function Home() {
         return (
           <PlayersTab
             players={store.players}
-            addPlayer={store.addPlayer}
-            deletePlayer={store.deletePlayer}
             onGoToPicks={() => store.setActiveTab('picks')}
           />
         );
@@ -53,6 +51,9 @@ export default function Home() {
             setResults={store.setResults}
             clearAllData={store.clearAllData}
             importData={store.importData}
+            players={store.players}
+            addPlayer={store.addPlayer}
+            deletePlayer={store.deletePlayer}
             state={{ players: store.players, results: store.results, activeTab: store.activeTab }}
           />
         );
