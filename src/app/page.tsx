@@ -66,9 +66,8 @@ export default function Home() {
     <main className="min-h-screen pb-24 sm:pb-12">
       <div className="max-w-3xl mx-auto px-4 pt-8 sm:pt-12">
         <header className="mb-8 sm:mb-10">
-          <p className="text-sm font-medium text-[var(--text-secondary)]">Sawgrass League</p>
-          <h1 className="mt-1 text-3xl sm:text-4xl font-semibold tracking-tight text-[var(--text-primary)] text-balance">
-            WC2026 Fantasy
+          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[var(--text-primary)] text-balance">
+            FIFA WC2026 Sawgrass Fantasy League
           </h1>
           <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
             {store.isSupabaseConfigured ? (
