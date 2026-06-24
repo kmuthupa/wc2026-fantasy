@@ -37,6 +37,13 @@ export const AdminTab: React.FC<AdminTabProps> = ({
   state,
 }) => {
   const [currentRound, setCurrentRound] = useState<KnockoutRound>('r32');
+  const [passcode, setPasscode] = useState('');
+  const [isVerified, setIsVerified] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('admin_verified') === 'true';
+    }
+    return false;
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const roundMeta = ROUNDS.find((r) => r.id === currentRound)!;
@@ -96,6 +103,51 @@ export const AdminTab: React.FC<AdminTabProps> = ({
     currentRound === 'final'
       ? results.final === teamId
       : results[currentRound].includes(teamId);
+
+  if (!isVerified) {
+    return (
+      <Card className="max-w-md mx-auto">
+        <CardHeader
+          title="Admin Verification"
+          description="Enter the admin passcode to unlock tournament results updates, database backups, and resets."
+        />
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const expected = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || 'sawgrass2026';
+            if (passcode === expected) {
+              setIsVerified(true);
+              if (typeof window !== 'undefined') {
+                sessionStorage.setItem('admin_verified', 'true');
+              }
+            } else {
+              alert('Incorrect passcode. Please try again.');
+            }
+          }}
+          className="space-y-4 mt-2"
+        >
+          <div>
+            <label htmlFor="admin-passcode" className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
+              Passcode
+            </label>
+            <input
+              id="admin-passcode"
+              type="password"
+              placeholder="••••••••"
+              value={passcode}
+              onChange={(e) => setPasscode(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-[var(--radius-md)] border border-[var(--border)] bg-white text-[var(--text-primary)] text-sm placeholder:text-[var(--text-tertiary)] focus:border-[var(--text-primary)] outline-none transition-colors"
+              required
+              autoFocus
+            />
+          </div>
+          <Button type="submit" className="w-full font-medium">
+            Verify & Unlock
+          </Button>
+        </form>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">

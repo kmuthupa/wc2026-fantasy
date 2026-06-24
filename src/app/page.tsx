@@ -69,9 +69,25 @@ export default function Home() {
           <h1 className="mt-1 text-3xl sm:text-4xl font-semibold tracking-tight text-[var(--text-primary)] text-balance">
             WC2026 Fantasy
           </h1>
-          <p className="mt-2 text-sm text-[var(--text-tertiary)]">
-            Local data only · no tracking
-          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
+            {store.isSupabaseConfigured ? (
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Supabase Connected
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                Local storage mode
+              </span>
+            )}
+            {store.isSyncing && (
+              <span className="inline-flex items-center gap-1.5 text-[var(--text-secondary)]">
+                <div className="w-3 h-3 border border-[var(--border)] border-t-[var(--text-primary)] rounded-full animate-spin" />
+                Saving...
+              </span>
+            )}
+          </div>
         </header>
 
         <div className="mb-8">

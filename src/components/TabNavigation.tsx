@@ -8,10 +8,10 @@ interface TabNavigationProps {
 }
 
 const tabs: { id: TabId; name: string; shortName: string }[] = [
+  { id: 'rules', name: 'Rules', shortName: 'Rules' },
   { id: 'leaderboard', name: 'Standings', shortName: 'Standings' },
   { id: 'players', name: 'Players', shortName: 'Players' },
   { id: 'picks', name: 'Picks', shortName: 'Picks' },
-  { id: 'rules', name: 'Rules', shortName: 'Rules' },
   { id: 'admin', name: 'Admin', shortName: 'Admin' },
 ];
 
