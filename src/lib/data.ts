@@ -148,6 +148,7 @@ export interface Picks {
 export interface Player {
   id: string;
   name: string;
+  passcode: string;
   championPick: string; // Pre-tournament champion pick (5pt bonus)
   picks: Picks;
 }

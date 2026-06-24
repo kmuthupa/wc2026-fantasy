@@ -11,7 +11,7 @@ interface AdminTabProps {
   clearAllData: () => void;
   importData: (json: string) => void;
   players: Player[];
-  addPlayer: (name: string, championPick: string) => void;
+  addPlayer: (name: string, championPick: string, passcode: string) => void;
   deletePlayer: (playerId: string) => void;
   state: { players: Player[]; results: Results; activeTab: string };
 }
@@ -53,14 +53,16 @@ export const AdminTab: React.FC<AdminTabProps> = ({
   });
   const [newName, setNewName] = useState('');
   const [newChampion, setNewChampion] = useState('');
+  const [newPlayerPasscode, setNewPlayerPasscode] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddPlayerSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newName && newChampion) {
-      addPlayer(newName.trim(), newChampion);
+    if (newName && newChampion && newPlayerPasscode) {
+      addPlayer(newName.trim(), newChampion, newPlayerPasscode.trim());
       setNewName('');
       setNewChampion('');
+      setNewPlayerPasscode('');
     }
   };
 
@@ -237,7 +239,7 @@ export const AdminTab: React.FC<AdminTabProps> = ({
           description="Each player picks a pre-tournament champion for a +5 bonus."
         />
         <form onSubmit={handleAddPlayerSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label htmlFor="player-name" className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
                 Name
@@ -248,6 +250,20 @@ export const AdminTab: React.FC<AdminTabProps> = ({
                 placeholder="e.g. Alex"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-[var(--radius-md)] border border-[var(--border)] bg-white text-[var(--text-primary)] text-sm placeholder:text-[var(--text-tertiary)] focus:border-[var(--text-primary)] outline-none transition-colors"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="player-passcode-input" className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
+                Player passcode (PIN)
+              </label>
+              <input
+                id="player-passcode-input"
+                type="text"
+                placeholder="e.g. 1234"
+                value={newPlayerPasscode}
+                onChange={(e) => setNewPlayerPasscode(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-[var(--radius-md)] border border-[var(--border)] bg-white text-[var(--text-primary)] text-sm placeholder:text-[var(--text-tertiary)] focus:border-[var(--text-primary)] outline-none transition-colors"
                 required
               />

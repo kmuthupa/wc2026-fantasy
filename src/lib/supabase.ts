@@ -26,6 +26,7 @@ export async function fetchPlayersDb(): Promise<Player[]> {
   return (data || []).map((row) => ({
     id: row.id,
     name: row.name,
+    passcode: row.passcode || '',
     championPick: row.champion_pick,
     picks: typeof row.picks === 'string' ? JSON.parse(row.picks) : row.picks,
   }));
@@ -87,7 +88,7 @@ export async function fetchResultsDb(): Promise<Results | null> {
   };
 }
 
-export async function addPlayerDb(name: string, championPick: string): Promise<Player> {
+export async function addPlayerDb(name: string, championPick: string, passcode: string): Promise<Player> {
   if (!supabase) throw new Error('Supabase client not initialized');
   const initialPicks = {
     r32: [],
@@ -102,6 +103,7 @@ export async function addPlayerDb(name: string, championPick: string): Promise<P
     .insert({
       name,
       champion_pick: championPick,
+      passcode,
       picks: initialPicks,
     })
     .select()
@@ -115,6 +117,7 @@ export async function addPlayerDb(name: string, championPick: string): Promise<P
   return {
     id: data.id,
     name: data.name,
+    passcode: data.passcode,
     championPick: data.champion_pick,
     picks: typeof data.picks === 'string' ? JSON.parse(data.picks) : data.picks,
   };

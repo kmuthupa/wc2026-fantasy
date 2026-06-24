@@ -27,6 +27,7 @@ function migrateState(state: AppState): AppState {
     ...state,
     players: (state.players || []).map((p) => ({
       ...p,
+      passcode: p.passcode || '1234',
       championPick: resolveTeamId(p.championPick),
     })),
   };
@@ -105,13 +106,13 @@ export function useFantasyStore() {
     }
   };
 
-  const addPlayer = async (name: string, championPick: string) => {
+  const addPlayer = async (name: string, championPick: string, passcode: string) => {
     if (state.players.length >= 25) return;
 
     setIsSyncing(true);
     if (isSupabaseConfigured) {
       try {
-        const newPlayer = await addPlayerDb(name.trim(), championPick);
+        const newPlayer = await addPlayerDb(name.trim(), championPick, passcode);
         setState((s) => ({
           ...s,
           players: [...s.players, newPlayer],
@@ -126,6 +127,7 @@ export function useFantasyStore() {
       const newPlayer: Player = {
         id: Math.random().toString(36).substr(2, 9),
         name: name.trim(),
+        passcode,
         championPick: resolveTeamId(championPick),
         picks: {
           r32: [],
@@ -217,7 +219,7 @@ export function useFantasyStore() {
           
           // Import players
           for (const p of data.players) {
-            const newPlayer = await addPlayerDb(p.name, p.championPick);
+            const newPlayer = await addPlayerDb(p.name, p.championPick, p.passcode || '1234');
             await updatePlayerPicksDb(newPlayer.id, p.picks);
           }
 

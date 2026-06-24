@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Player, ALL_TEAMS, Team, Picks, KnockoutRound } from '@/lib/data';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -27,8 +27,35 @@ export const PicksTab: React.FC<PicksTabProps> = ({
   const [selectedPlayerId, setSelectedPlayerId] = useState('');
   const [activeRoundIdx, setActiveRoundIdx] = useState(0);
   const [search, setSearch] = useState('');
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [passcodeInput, setPasscodeInput] = useState('');
 
   const selectedPlayer = players.find((p) => p.id === selectedPlayerId);
+
+  useEffect(() => {
+    if (selectedPlayer) {
+      const saved = localStorage.getItem(`unlocked_player_${selectedPlayer.id}`);
+      if (saved === 'true') {
+        setIsUnlocked(true);
+      } else {
+        setIsUnlocked(false);
+        setPasscodeInput('');
+      }
+    } else {
+      setIsUnlocked(false);
+      setPasscodeInput('');
+    }
+  }, [selectedPlayerId, selectedPlayer]);
+
+  const handleUnlock = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedPlayer && passcodeInput.trim() === selectedPlayer.passcode) {
+      setIsUnlocked(true);
+      localStorage.setItem(`unlocked_player_${selectedPlayer.id}`, 'true');
+    } else {
+      alert('Incorrect passcode!');
+    }
+  };
   const activeRound = ROUNDS[activeRoundIdx];
 
   const handleTogglePick = (round: KnockoutRound, teamId: string) => {
@@ -180,6 +207,46 @@ export const PicksTab: React.FC<PicksTabProps> = ({
             )}
           </div>
         )}
+
+        {selectedPlayer && !isUnlocked && (
+          <form onSubmit={handleUnlock} className="mt-4 pt-4 border-t border-[var(--border-subtle)] flex items-end gap-3">
+            <div className="flex-1">
+              <label htmlFor="player-passcode" className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
+                Enter your passcode to unlock editing
+              </label>
+              <input
+                id="player-passcode"
+                type="password"
+                placeholder="Passcode..."
+                value={passcodeInput}
+                onChange={(e) => setPasscodeInput(e.target.value)}
+                className="w-full px-3 py-1.5 text-sm rounded-[var(--radius-md)] border border-[var(--border)] bg-white outline-none focus:border-[var(--text-primary)] transition-colors"
+                required
+              />
+            </div>
+            <Button type="submit" size="sm" className="font-medium">
+              Unlock
+            </Button>
+          </form>
+        )}
+
+        {selectedPlayer && isUnlocked && (
+          <div className="mt-4 pt-4 border-t border-[var(--border-subtle)] flex items-center justify-between text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
+            <span className="flex items-center gap-1.5 font-medium">
+              🔓 Editing unlocked
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setIsUnlocked(false);
+                localStorage.removeItem(`unlocked_player_${selectedPlayer.id}`);
+              }}
+              className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] underline transition-colors"
+            >
+              Lock edits
+            </button>
+          </div>
+        )}
       </Card>
 
       {!selectedPlayer ? (
@@ -263,11 +330,19 @@ export const PicksTab: React.FC<PicksTabProps> = ({
                     <li key={team.id}>
                       <button
                         type="button"
-                        onClick={() => handleTogglePick(activeRound.id, team.id)}
+                        onClick={() => {
+                          if (isUnlocked) {
+                            handleTogglePick(activeRound.id, team.id);
+                          } else {
+                            alert('Please enter your player passcode to unlock bracket editing.');
+                          }
+                        }}
                         className={`w-full px-6 py-3 flex items-center gap-3 text-left transition-colors ${
                           picked
                             ? 'bg-[var(--accent-subtle)]'
-                            : 'hover:bg-[var(--surface-muted)]'
+                            : isUnlocked
+                              ? 'hover:bg-[var(--surface-muted)]'
+                              : 'opacity-75 cursor-not-allowed'
                         }`}
                       >
                         <span className="text-2xl">{team.flag}</span>
@@ -277,15 +352,21 @@ export const PicksTab: React.FC<PicksTabProps> = ({
                         <span
                           className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
                             picked
-                              ? 'border-[var(--accent)] bg-[var(--accent)]'
+                              ? isUnlocked
+                                ? 'border-[var(--accent)] bg-[var(--accent)]'
+                                : 'border-gray-400 bg-gray-400'
                               : 'border-[var(--border)]'
                           }`}
                         >
-                          {picked && (
+                          {picked ? (
                             <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                             </svg>
-                          )}
+                          ) : !isUnlocked ? (
+                            <svg className="w-2.5 h-2.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                            </svg>
+                          ) : null}
                         </span>
                       </button>
                     </li>

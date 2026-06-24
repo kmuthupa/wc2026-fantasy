@@ -5,6 +5,7 @@
 create table if not exists public.players (
   id uuid default gen_random_uuid() primary key,
   name text not null,
+  passcode text not null default '1234',
   champion_pick text not null,
   picks jsonb not null default '{"r32": [], "r16": [], "qf": [], "sf": [], "final": ""}'::jsonb,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
