@@ -1,4 +1,3 @@
-import { Request, Response, NextFunction } from 'express';
 import { getRoundById } from '../services/roundService';
 
 /**
@@ -7,21 +6,25 @@ import { getRoundById } from '../services/roundService';
  * - Uses server time (UTC) and round.start_time / round.end_time.
  * - Responds 403 { code: 'ROUND_LOCKED', message, lockedUntil } when blocked.
  *
- * Adapt getRoundById to your ORM/service layer.
+ * This file intentionally avoids importing Express types so it can be used in
+ * Next.js API routes or lightweight server code without adding an express
+ * dependency. The function is compatible with Express-style handlers if you
+ * pass req, res, next, but types are kept `any` to prevent compile-time
+ * dependency on @types/express.
  */
-export async function ensurePickEditable(req: Request, res: Response, next: NextFunction) {
+export async function ensurePickEditable(req: any, res: any, next?: any) {
   const roundId =
     (req.body && (req.body.roundId ?? req.body.round?.id)) ??
     req.params?.roundId ??
     req.query?.roundId;
 
   if (!roundId) {
-    return res.status(400).json({ code: 'MISSING_ROUND_ID', message: 'roundId required' });
+    return res.status?.(400).json?.({ code: 'MISSING_ROUND_ID', message: 'roundId required' }) || { status: 400, body: { code: 'MISSING_ROUND_ID', message: 'roundId required' } };
   }
 
   const round = await getRoundById(String(roundId));
   if (!round) {
-    return res.status(404).json({ code: 'ROUND_NOT_FOUND', message: 'Round not found' });
+    return res.status?.(404).json?.({ code: 'ROUND_NOT_FOUND', message: 'Round not found' }) || { status: 404, body: { code: 'ROUND_NOT_FOUND', message: 'Round not found' } };
   }
 
   // authoritative server time
@@ -32,14 +35,16 @@ export async function ensurePickEditable(req: Request, res: Response, next: Next
     const start = new Date(round.start_time);
     const end = new Date(round.end_time);
     if (now >= start && now < end) {
-      return res.status(403).json({
+      const payload = {
         code: 'ROUND_LOCKED',
         message: 'Cannot edit picks while the round is in progress.',
         lockedUntil: end.toISOString(),
-      });
+      };
+      return res.status?.(403).json?.(payload) || { status: 403, body: payload };
     }
   }
 
   // allowed
-  return next();
+  if (typeof next === 'function') return next();
+  return { status: 200 };
 }
