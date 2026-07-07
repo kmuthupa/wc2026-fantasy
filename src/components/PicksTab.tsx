@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Player, ALL_TEAMS, Team, Picks, KnockoutRound } from '@/lib/data';
+import { Player, ALL_TEAMS, Team, Picks, KnockoutRound, Results } from '@/lib/data';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 
 interface PicksTabProps {
   players: Player[];
+  results: Results;
   updatePlayerPicks: (playerId: string, picks: Picks) => void;
   onAddPlayers?: () => void;
 }
@@ -21,6 +22,7 @@ const ROUNDS: { id: KnockoutRound; label: string; subtitle: string; limit: numbe
 
 export const PicksTab: React.FC<PicksTabProps> = ({
   players,
+  results,
   updatePlayerPicks,
   onAddPlayers,
 }) => {
@@ -60,6 +62,12 @@ export const PicksTab: React.FC<PicksTabProps> = ({
 
   const handleTogglePick = (round: KnockoutRound, teamId: string) => {
     if (!selectedPlayer) return;
+
+    const isRoundLocked = results.lockedRounds?.includes(round);
+    if (isRoundLocked) {
+      alert('This round is locked by the admin and cannot be edited.');
+      return;
+    }
 
     const newPicks = { ...selectedPlayer.picks };
 
@@ -263,6 +271,7 @@ export const PicksTab: React.FC<PicksTabProps> = ({
             {ROUNDS.map((round, idx) => {
               const complete = isRoundComplete(round.id);
               const isActive = idx === activeRoundIdx;
+              const isLocked = results.lockedRounds?.includes(round.id);
               return (
                 <button
                   key={round.id}
@@ -274,12 +283,16 @@ export const PicksTab: React.FC<PicksTabProps> = ({
                   className={`flex-shrink-0 px-3 py-2 rounded-[var(--radius-md)] text-left transition-colors border ${
                     isActive
                       ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
-                      : complete
-                        ? 'bg-green-50 text-green-800 border-green-100'
-                        : 'bg-white text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--text-tertiary)]'
+                      : isLocked
+                        ? 'bg-gray-50 text-gray-500 border-gray-200 hover:border-gray-300'
+                        : complete
+                          ? 'bg-green-50 text-green-800 border-green-100'
+                          : 'bg-white text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--text-tertiary)]'
                   }`}
                 >
-                  <span className="block text-xs font-medium">{round.label}</span>
+                  <span className="block text-xs font-medium flex items-center gap-1.5">
+                    {round.label} {isLocked && '🔒'}
+                  </span>
                   <span className={`block text-[10px] mt-0.5 ${isActive ? 'text-white/70' : ''}`}>
                     {getPickedCount(round.id)}/{round.limit}
                   </span>
@@ -291,13 +304,27 @@ export const PicksTab: React.FC<PicksTabProps> = ({
           <Card padding="none">
             <div className="px-6 py-4 border-b border-[var(--border-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="font-semibold text-[var(--text-primary)]">{activeRound.label}</h3>
+                <h3 className="font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                  {activeRound.label}
+                  {results.lockedRounds?.includes(activeRound.id) && (
+                    <span className="text-xs font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full border border-gray-200 flex items-center gap-1">
+                      🔒 Locked by Admin
+                    </span>
+                  )}
+                </h3>
                 <p className="text-sm text-[var(--text-secondary)]">{activeRound.subtitle}</p>
               </div>
               <Badge variant={isRoundComplete(activeRound.id) ? 'success' : 'warning'}>
                 {getPickedCount(activeRound.id)} / {activeRound.limit} selected
               </Badge>
             </div>
+
+            {results.lockedRounds?.includes(activeRound.id) && (
+              <div className="px-6 py-3 bg-amber-50/80 border-b border-amber-100 text-amber-800 flex items-center gap-2 text-xs sm:text-sm font-medium">
+                <span>🔒</span>
+                <span>This round has been locked by the admin. Picks cannot be modified.</span>
+              </div>
+            )}
 
             <div className="px-6 py-3 border-b border-[var(--border-subtle)]">
               <input
@@ -331,7 +358,10 @@ export const PicksTab: React.FC<PicksTabProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          if (isUnlocked) {
+                          const isLocked = results.lockedRounds?.includes(activeRound.id);
+                          if (isLocked) {
+                            alert('This round has been locked by the admin and cannot be edited.');
+                          } else if (isUnlocked) {
                             handleTogglePick(activeRound.id, team.id);
                           } else {
                             alert('Please enter your player passcode to unlock bracket editing.');
@@ -340,10 +370,10 @@ export const PicksTab: React.FC<PicksTabProps> = ({
                         className={`w-full px-6 py-3 flex items-center gap-3 text-left transition-colors ${
                           picked
                             ? 'bg-[var(--accent-subtle)]'
-                            : isUnlocked
+                            : !results.lockedRounds?.includes(activeRound.id) && isUnlocked
                               ? 'hover:bg-[var(--surface-muted)]'
-                              : 'opacity-75 cursor-not-allowed'
-                        }`}
+                              : 'opacity-75'
+                        } ${results.lockedRounds?.includes(activeRound.id) ? 'cursor-not-allowed' : ''}`}
                       >
                         <span className="text-2xl">{team.flag}</span>
                         <span className="flex-1 font-medium text-[var(--text-primary)]">
@@ -352,7 +382,7 @@ export const PicksTab: React.FC<PicksTabProps> = ({
                         <span
                           className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
                             picked
-                              ? isUnlocked
+                              ? !results.lockedRounds?.includes(activeRound.id) && isUnlocked
                                 ? 'border-[var(--accent)] bg-[var(--accent)]'
                                 : 'border-gray-400 bg-gray-400'
                               : 'border-[var(--border)]'
@@ -361,6 +391,10 @@ export const PicksTab: React.FC<PicksTabProps> = ({
                           {picked ? (
                             <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : results.lockedRounds?.includes(activeRound.id) ? (
+                            <svg className="w-2.5 h-2.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                             </svg>
                           ) : !isUnlocked ? (
                             <svg className="w-2.5 h-2.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">

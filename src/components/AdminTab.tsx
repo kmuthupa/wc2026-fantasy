@@ -69,6 +69,19 @@ export const AdminTab: React.FC<AdminTabProps> = ({
   const roundMeta = ROUNDS.find((r) => r.id === currentRound)!;
   const eligibleTeams = getEligibleTeams(currentRound, results);
 
+  const isRoundLocked = results.lockedRounds?.includes(currentRound) || false;
+
+  const handleToggleLock = () => {
+    const newResults = { ...results };
+    const currentLocked = newResults.lockedRounds || [];
+    if (isRoundLocked) {
+      newResults.lockedRounds = currentLocked.filter((r) => r !== currentRound);
+    } else {
+      newResults.lockedRounds = [...currentLocked, currentRound];
+    }
+    setResults(newResults);
+  };
+
   const selectedCount =
     currentRound === 'final'
       ? results.final ? 1 : 0
@@ -192,6 +205,28 @@ export const AdminTab: React.FC<AdminTabProps> = ({
               {round.label}
             </button>
           ))}
+        </div>
+
+        <div className="flex items-center justify-between p-3.5 mb-6 bg-[var(--surface-muted)]/50 border border-[var(--border-subtle)] rounded-[var(--radius-md)]">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <span className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
+              {isRoundLocked ? '🔒 Locked' : '🔓 Unlocked'}
+            </span>
+            <span className="text-xs text-[var(--text-secondary)]">
+              {isRoundLocked ? 'Players cannot edit picks for this round.' : 'Players can edit picks with their passcode.'}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleToggleLock}
+            className={`px-3 py-1.5 rounded-[var(--radius-md)] text-xs font-semibold shadow-[var(--shadow-sm)] border transition-all ${
+              isRoundLocked
+                ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
+                : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+            }`}
+          >
+            {isRoundLocked ? 'Unlock Round' : 'Lock Round'}
+          </button>
         </div>
 
         <div className="flex items-center justify-between mb-4">

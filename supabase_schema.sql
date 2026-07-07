@@ -19,12 +19,13 @@ create table if not exists public.tournament_results (
   qf jsonb not null default '[]'::jsonb,
   sf jsonb not null default '[]'::jsonb,
   final text not null default '',
+  locked_rounds jsonb not null default '[]'::jsonb,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 -- 3. Insert the initial empty tournament results row
-insert into public.tournament_results (id, r32, r16, qf, sf, final)
-values (1, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '')
+insert into public.tournament_results (id, r32, r16, qf, sf, final, locked_rounds)
+values (1, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '', '[]'::jsonb)
 on conflict (id) do nothing;
 
 -- 4. Enable Row Level Security (RLS)

@@ -38,6 +38,7 @@ export default function Home() {
         return (
           <PicksTab
             players={store.players}
+            results={store.results}
             updatePlayerPicks={store.updatePlayerPicks}
             onAddPlayers={() => store.setActiveTab('players')}
           />
@@ -70,10 +71,15 @@ export default function Home() {
             FIFA WC2026 Sawgrass Fantasy League
           </h1>
           <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
-            {store.isSupabaseConfigured ? (
+            {store.isSupabaseConfigured && store.isSupabaseAvailable ? (
               <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 Supabase Connected
+              </span>
+            ) : store.isSupabaseConfigured ? (
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                Local storage mode (Supabase unavailable)
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100 font-medium">

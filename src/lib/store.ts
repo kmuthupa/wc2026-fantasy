@@ -5,6 +5,7 @@ import { Player, Results, INITIAL_RESULTS } from './data';
 import { resolveTeamId } from './teams';
 import {
   isSupabaseConfigured,
+  checkSupabaseHealth,
   fetchPlayersDb,
   fetchResultsDb,
   addPlayerDb,
@@ -30,6 +31,11 @@ function migrateState(state: AppState): AppState {
       passcode: p.passcode || '1234',
       championPick: resolveTeamId(p.championPick),
     })),
+    results: {
+      ...INITIAL_RESULTS,
+      ...state.results,
+      lockedRounds: state.results?.lockedRounds || [],
+    },
   };
 }
 
@@ -42,26 +48,38 @@ export function useFantasyStore() {
 
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isSupabaseAvailable, setIsSupabaseAvailable] = useState(false);
+
+  const useSupabase = isSupabaseConfigured && isSupabaseAvailable;
 
   // Load initial data
   useEffect(() => {
     async function loadData() {
-      if (isSupabaseConfigured) {
-        try {
-          const players = await fetchPlayersDb();
-          const results = await fetchResultsDb();
-          setState((s) => ({
-            ...s,
-            players,
-            results: results || INITIAL_RESULTS,
-          }));
-        } catch (e) {
-          console.error('Failed to load data from Supabase, trying localStorage fallback...', e);
-          loadFromLocalStorage();
+      if (useSupabase) {
+        const isHealthy = await checkSupabaseHealth();
+        setIsSupabaseAvailable(isHealthy);
+
+        if (isHealthy) {
+          try {
+            const players = await fetchPlayersDb();
+            const results = await fetchResultsDb();
+            setState((s) => ({
+              ...s,
+              players,
+              results: results || INITIAL_RESULTS,
+            }));
+            setIsLoaded(true);
+            return;
+          } catch (e) {
+            console.error('Failed to load data from Supabase, trying localStorage fallback...', e);
+            setIsSupabaseAvailable(false);
+          }
+        } else {
+          console.warn('Supabase unavailable, using localStorage fallback...');
         }
-      } else {
-        loadFromLocalStorage();
       }
+
+      loadFromLocalStorage();
       setIsLoaded(true);
     }
 
@@ -93,7 +111,7 @@ export function useFantasyStore() {
     // Optimistic update
     setState((s) => ({ ...s, results }));
 
-    if (isSupabaseConfigured) {
+    if (useSupabase) {
       setIsSyncing(true);
       try {
         await updateResultsDb(results);
@@ -110,7 +128,7 @@ export function useFantasyStore() {
     if (state.players.length >= 25) return;
 
     setIsSyncing(true);
-    if (isSupabaseConfigured) {
+    if (useSupabase) {
       try {
         const newPlayer = await addPlayerDb(name.trim(), championPick, passcode);
         setState((s) => ({
@@ -152,7 +170,7 @@ export function useFantasyStore() {
       players: s.players.map((p) => (p.id === playerId ? { ...p, picks } : p)),
     }));
 
-    if (isSupabaseConfigured) {
+    if (useSupabase) {
       setIsSyncing(true);
       try {
         await updatePlayerPicksDb(playerId, picks);
@@ -172,7 +190,7 @@ export function useFantasyStore() {
       players: s.players.filter((p) => p.id !== playerId),
     }));
 
-    if (isSupabaseConfigured) {
+    if (useSupabase) {
       setIsSyncing(true);
       try {
         await deletePlayerDb(playerId);
@@ -193,7 +211,7 @@ export function useFantasyStore() {
         activeTab: 'players',
       });
 
-      if (isSupabaseConfigured) {
+      if (useSupabase) {
         setIsSyncing(true);
         try {
           await clearAllDataDb();
@@ -211,7 +229,7 @@ export function useFantasyStore() {
     try {
       const data = migrateState(JSON.parse(jsonData));
       
-      if (isSupabaseConfigured) {
+      if (useSupabase) {
         setIsSyncing(true);
         try {
           // Clear everything first
@@ -252,6 +270,7 @@ export function useFantasyStore() {
     isLoaded,
     isSyncing,
     isSupabaseConfigured,
+    isSupabaseAvailable,
     setPlayers,
     setResults,
     setActiveTab,

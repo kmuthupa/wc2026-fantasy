@@ -159,6 +159,7 @@ export interface Results {
   qf: string[];  // Actual 4 QF winners
   sf: string[];  // Actual 2 SF winners
   final: string; // Actual Champion
+  lockedRounds?: KnockoutRound[]; // Locked rounds
 }
 
 export const INITIAL_PICKS: Picks = {
@@ -175,4 +176,5 @@ export const INITIAL_RESULTS: Results = {
   qf: [],
   sf: [],
   final: '',
+  lockedRounds: [],
 };
