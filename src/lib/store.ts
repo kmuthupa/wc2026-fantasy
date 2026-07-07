@@ -55,7 +55,7 @@ export function useFantasyStore() {
   // Load initial data
   useEffect(() => {
     async function loadData() {
-      if (useSupabase) {
+      if (isSupabaseConfigured) {
         const isHealthy = await checkSupabaseHealth();
         setIsSupabaseAvailable(isHealthy);
 
